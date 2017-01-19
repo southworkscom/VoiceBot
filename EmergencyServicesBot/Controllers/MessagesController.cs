@@ -1,15 +1,12 @@
-﻿using System;
-using System.Linq;
-using System.Net;
-using System.Net.Http;
-using System.Threading.Tasks;
-using System.Web.Http;
-using System.Web.Http.Description;
-using Microsoft.Bot.Connector;
-using Newtonsoft.Json;
-
-namespace EmergencyServicesBot
+﻿namespace EmergencyServicesBot
 {
+    using System;
+    using System.Net;
+    using System.Net.Http;
+    using System.Threading.Tasks;
+    using System.Web.Http;
+    using Microsoft.Bot.Connector;
+
     [BotAuthentication]
     public class MessagesController : ApiController
     {
@@ -22,6 +19,7 @@ namespace EmergencyServicesBot
             if (activity.Type == ActivityTypes.Message)
             {
                 ConnectorClient connector = new ConnectorClient(new Uri(activity.ServiceUrl));
+                
                 // calculate something for us to return
                 int length = (activity.Text ?? string.Empty).Length;
 
@@ -31,8 +29,9 @@ namespace EmergencyServicesBot
             }
             else
             {
-                HandleSystemMessage(activity);
+                this.HandleSystemMessage(activity);
             }
+
             var response = Request.CreateResponse(HttpStatusCode.OK);
             return response;
         }

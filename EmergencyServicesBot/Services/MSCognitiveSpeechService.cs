@@ -1,32 +1,32 @@
 ﻿namespace EmergencyServicesBot
 {
     using System;
+    using System.Diagnostics;
     using System.IO;
     using System.Net.Http;
-    using System.Threading.Tasks;
-    using Newtonsoft.Json;
     using System.Net.Http.Headers;
-    using System.Diagnostics;
-    using Microsoft.Bing.Speech;
-    using System.Threading;
-    using System.Collections.Generic;
+    using System.Threading.Tasks;
     using System.Web.Configuration;
-    using System.Text;
+    using Microsoft.Bing.Speech;
+    using Newtonsoft.Json;
 
     public class MicrosoftCognitiveSpeechService
     {
-        private static string TextAnalyticsApiKey = WebConfigurationManager.AppSettings["MicrosoftTextAnalyticsApiKey"];
-        public string SubscriptionKey { get; } = WebConfigurationManager.AppSettings["MicrosoftSpeechApiKey"];
-        private static string SpeechRecognitionUri = WebConfigurationManager.AppSettings["MicrosoftSpeechRecognitionUri"];
-        //private const string BaseUrl = "https://westus.api.cognitive.microsoft.com/";
-        public string DefaultLocale { get; } = "en-US";
+        private readonly string subscriptionKey;
+        private readonly string speechRecognitionUri;
 
-        private static readonly Task CompletedTask = Task.FromResult(true);
+        public MicrosoftCognitiveSpeechService()
+        {
+            this.DefaultLocale = "en-US";
+            this.subscriptionKey = WebConfigurationManager.AppSettings["MicrosoftSpeechApiKey"];
+            this.speechRecognitionUri = WebConfigurationManager.AppSettings["MicrosoftSpeechRecognitionUri"];
+        }
 
-        //public async Task GetText(Stream audiostream)
-        //{
-        //    var preferences = new Preferences(DefaultLocale, new Uri(SpeechRecognitionUri), new CognitiveServicesAuthorizationProvider(SubscriptionKey));
+        public string DefaultLocale { get; set; }
 
+        // public async Task GetText1(Stream audiostream)
+        // {
+        //    var preferences = new Preferences(this.DefaultLocale, new Uri(this.speechRecognitionUri), new CognitiveServicesAuthorizationProvider(this.subscriptionKey));
         //    // Create a a speech client
         //    using (var speechClient = new SpeechClient(preferences))
         //    {
@@ -38,7 +38,7 @@
         //        var requestMetadata = new RequestMetadata(Guid.NewGuid(), deviceMetadata, applicationMetadata, "SampleAppService");
         //        await speechClient.RecognizeAsync(new SpeechInput(audiostream, requestMetadata), CancellationToken.None).ConfigureAwait(false);
         //    }
-        //}
+        // }
 
         /// <summary>
         /// Invoked when the speech client receives a partial recognition hypothesis from the server.
@@ -47,17 +47,13 @@
         /// <returns>
         /// A task
         /// </returns>
-        public Task OnPartialResultAsync(RecognitionPartialResult args)
-
-        {
-            Debug.WriteLine("--- Partial result received by OnPartialResult ---");
-
-            Debug.WriteLine(args.DisplayText);
-            // Print the partial response recognition hypothesis.
-            return AgentListener.Resume(args.DisplayText);
-            //Debug.WriteLine(args.DisplayText);
-            //return CompletedTask;
-        }
+        // public Task OnPartialResultAsync(RecognitionPartialResult args)
+        // {
+        //    Debug.WriteLine("--- Partial result received by OnPartialResult ---");
+        //    Debug.WriteLine(args.DisplayText);
+        //    return AgentListener.Resume(args.DisplayText);
+        //    // return CompletedTask;
+        // }
 
         /// <summary>
         /// Invoked when the speech client receives a phrase recognition result(s) from the server.
@@ -66,25 +62,20 @@
         /// <returns>
         /// A task
         /// </returns>
-        public Task OnRecognitionResult(RecognitionResult args)
-        {
-            var response = args;
-            Debug.WriteLine("--- Phrase result received by OnRecognitionResult ---");
-
-            // Print the recognition status.
-            Debug.WriteLine("***** Phrase Recognition Status = [{0}] ***", response.RecognitionStatus);
-
-            if (response.Phrases != null)
-            {
-                foreach (var result in response.Phrases)
-                {
-                    // Print the recognition phrase display text.
-                    Debug.WriteLine("{0} (Confidence:{1})", result.DisplayText, result.Confidence);
-                }
-            }
-            return CompletedTask;
-        }
-
+        // public Task OnRecognitionResult(RecognitionResult args)
+        // {
+        //    var response = args;
+        //    Debug.WriteLine("--- Phrase result received by OnRecognitionResult ---");
+        //    Debug.WriteLine("***** Phrase Recognition Status = [{0}] ***", response.RecognitionStatus);
+        //    if (response.Phrases != null)
+        //    {
+        //        foreach (var result in response.Phrases)
+        //        {
+        //            Debug.WriteLine("{0} (Confidence:{1})", result.DisplayText, result.Confidence);
+        //        }
+        //    }
+        //    return Task.FromResult(true);
+        // }
 
         /// <summary>
         /// Gets text from an audio stream.
@@ -93,19 +84,18 @@
         /// <returns>Transcribed text. </returns>
         public async Task<string> GetTextFromAudioAsync(Stream audiostream)
         {
-            var requestUri = @"https://speech.platform.bing.com/recognize?scenarios=smd&appid=D4D52672-91D7-4C74-8AD8-42B1D98141A5&locale=en-US&device.os=bot&form=BCSSTT&version=3.0&format=json&instanceid=565D69FF-E928-4B7E-87DA-9A750B96D9E3&requestid=" + Guid.NewGuid();
-            //var requestUri = SpeechRecognitionUri + Guid.NewGuid();
+            var requestUri = this.speechRecognitionUri + Guid.NewGuid();
 
             using (var client = new HttpClient())
             {
                 var token = Authentication.Instance.GetAccessToken();
-                client.DefaultRequestHeaders.Add("Authorization", "Bearer " + token.access_token);
+                client.DefaultRequestHeaders.Add("Authorization", "Bearer " + token);
 
                 try
                 {
                     using (var binaryContent = new ByteArrayContent(StreamToBytes(audiostream)))
                     {
-                        //binaryContent.Headers.TryAddWithoutValidation("content-type", "audio/wav; codec=\"audio/pcm\"; samplerate=16000");
+                        // binaryContent.Headers.TryAddWithoutValidation("content-type", "audio/wav; codec=\"audio/pcm\"; samplerate=16000");
                         var response = await client.PostAsync(requestUri, binaryContent);
                         var responseString = await response.Content.ReadAsStringAsync();
                         dynamic data = JsonConvert.DeserializeObject(responseString);
@@ -114,6 +104,7 @@
                         {
                             return data.header.name;
                         }
+                        else
                         {
                             return string.Empty;
                         }
@@ -138,16 +129,6 @@
             {
                 input.CopyTo(ms);
                 return ms.ToArray();
-            }
-        }
-
-        static async Task<String> CallEndpoint(HttpClient client, string uri, byte[] byteData)
-        {
-            using (var content = new ByteArrayContent(byteData))
-            {
-                content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
-                var response = await client.PostAsync(uri, content);
-                return await response.Content.ReadAsStringAsync();
             }
         }
     }
