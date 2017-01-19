@@ -19,7 +19,7 @@
         {
             this.DefaultLocale = "en-US";
             this.subscriptionKey = WebConfigurationManager.AppSettings["MicrosoftSpeechApiKey"];
-            this.speechRecognitionUri = WebConfigurationManager.AppSettings["MicrosoftSpeechRecognitionUri"];
+            this.speechRecognitionUri = Uri.UnescapeDataString(WebConfigurationManager.AppSettings["MicrosoftSpeechRecognitionUri"]);
         }
 
         public string DefaultLocale { get; set; }
