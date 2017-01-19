@@ -4,12 +4,12 @@
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.IO;
+    using System.Linq;
     using System.Threading.Tasks;
     using Microsoft.Bot.Builder.Calling;
     using Microsoft.Bot.Builder.Calling.Events;
     using Microsoft.Bot.Builder.Calling.ObjectModel.Contracts;
     using Microsoft.Bot.Builder.Calling.ObjectModel.Misc;
-    using Microsoft.Bot.Connector;
 
     public class IVRBot : IDisposable, ICallingBot
     {
@@ -25,8 +25,6 @@
         private readonly Dictionary<string, CallState> callStateMap = new Dictionary<string, CallState>();
 
         private readonly MicrosoftCognitiveSpeechService speechService = new MicrosoftCognitiveSpeechService();
-
-        private IEnumerable<Participant> participants;
 
         public IVRBot(ICallingBotService callingBotService)
         {
@@ -151,7 +149,7 @@
 
         private Task OnIncomingCallReceived(IncomingCallEvent incomingCallEvent)
         {
-            this.callStateMap[incomingCallEvent.IncomingCall.Id] = new CallState();
+            this.callStateMap[incomingCallEvent.IncomingCall.Id] = new CallState(incomingCallEvent.IncomingCall.Participants);
 
             incomingCallEvent.ResultingWorkflow.Actions = new List<ActionBase>
                 {
@@ -159,15 +157,12 @@
                     GetPromptForText(WelcomeMessage)
                 };
 
-            // Save the participants so that we can use them later for pro-active message
-            // This would need to be stored/keyed for multiple users!
-            this.participants = incomingCallEvent.IncomingCall.Participants;
             return Task.FromResult(true);
         }
 
         private Task OnPlayPromptCompleted(PlayPromptOutcomeEvent playPromptOutcomeEvent)
         {
-            var callStateForClient = this.callStateMap[playPromptOutcomeEvent.ConversationResult.Id];
+            var callState = this.callStateMap[playPromptOutcomeEvent.ConversationResult.Id];
             SetupInitialMenu(playPromptOutcomeEvent.ResultingWorkflow);
 
             return Task.FromResult(true);
@@ -186,34 +181,22 @@
             {
                 var record = await recordOutcomeEvent.RecordedContent;
                 string text = await this.GetTextFromAudioAsync(record);
-                await this.SendSTTResultToUser("We detected the following audio: " + text);
+
+                var callState = this.callStateMap[recordOutcomeEvent.ConversationResult.Id];
+
+                await this.SendSTTResultToUser("We detected the following audio: " + text, callState.Participants);
             }
 
             recordOutcomeEvent.ResultingWorkflow.Links = null;
             this.callStateMap.Remove(recordOutcomeEvent.ConversationResult.Id);
         }
 
-        private async Task SendSTTResultToUser(string text)
+        private async Task SendSTTResultToUser(string text, IEnumerable<Participant> participants)
         {
-            foreach (var participant in this.participants)
-            {
-                if (participant.Originator)
-                {
-                    AgentListener.ToId = participant.Identity;
-                    AgentListener.ToName = participant.DisplayName;
-                    AgentListener.ConversationId = participant.Identity; // same as channelid
-                }
-                else
-                {
-                    AgentListener.FromId = participant.Identity;
-                    AgentListener.FromName = participant.DisplayName;
-                }
-            }
+            var to = participants.Single(x => x.Originator);
+            var from = participants.First(x => !x.Originator);
 
-            AgentListener.ChannelId = "skype";
-            AgentListener.ServiceUrl = "https://skype.botframework.com";
-            MicrosoftAppCredentials.TrustServiceUrl(AgentListener.ServiceUrl);
-            await AgentListener.Resume(text);
+            await AgentListener.Resume(to.Identity, to.DisplayName, from.Identity, from.DisplayName, to.Identity, text);
         }
 
         /// <summary>
@@ -230,16 +213,23 @@
 
         private Task OnRecognizeCompleted(RecognizeOutcomeEvent recognizeOutcomeEvent)
         {
-            var callStateForClient = this.callStateMap[recognizeOutcomeEvent.ConversationResult.Id];
+            var callState = this.callStateMap[recognizeOutcomeEvent.ConversationResult.Id];
 
-            ProcessMainMenuSelection(recognizeOutcomeEvent, callStateForClient);
+            ProcessMainMenuSelection(recognizeOutcomeEvent, callState);
 
             return Task.FromResult(true);
         }
 
         private class CallState
         {
+            public CallState(IEnumerable<Participant> participants)
+            {
+                this.Participants = participants;
+            }
+
             public string ChosenMenuOption { get; set; }
+
+            public IEnumerable<Participant> Participants { get; }
         }
     }
 }
