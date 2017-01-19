@@ -85,7 +85,15 @@
         {
             if (outcome.RecognizeOutcome.Outcome != Outcome.Success)
             {
-                SetupInitialMenuWithErrorMessage(outcome.ResultingWorkflow);                
+                if (outcome.RecognizeOutcome.FailureReason == RecognitionCompletionReason.IncorrectDtmf.ToString())
+                {
+                    SetupInitialMenuWithErrorMessage(outcome.ResultingWorkflow);
+                }
+                else
+                {
+                    SetupInitialMenu(outcome.ResultingWorkflow);
+                }
+
                 return;
             }
 
