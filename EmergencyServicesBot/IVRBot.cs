@@ -14,13 +14,14 @@
     public class IVRBot : IDisposable, ICallingBot
     {
         // DTMF keys required for each of option, will be used for parsing results of recognize
-        private const string Support = "2";
+        private const string Support = "1";
 
         // Response messages depending on user selection
         private const string WelcomeMessage = "Hello, you have successfully contacted the Emergency Services Bot.";
-        private const string MainMenuPromptMessage = "If you have a life threatening medical emergency please contact the emergency services or go to your nearest hospital.  For non-life threatening situations please press 2.";
+        private const string MainMenuPromptMessage = "If you have a life threatening medical emergency please contact the emergency services or go to your nearest hospital. For non-life threatening situations please press 1.";
         private const string NoConsultantsMessage = "Whilst we wait to connect you, please leave your name and a description of your problem. You can press the hash key when finished. We will call you as soon as possible.";
         private const string EndingMessage = "Thank you for leaving the message, goodbye";
+        private const string OptionMenuNotSupportedMessage = "The option you pressed is not supported. Please try agagin.";
 
         private readonly Dictionary<string, CallState> callStateMap = new Dictionary<string, CallState>();
 
@@ -64,14 +65,27 @@
 
         private static void SetupInitialMenu(Workflow workflow)
         {
-            workflow.Actions = new List<ActionBase> { CreateIvrOptions(MainMenuPromptMessage, 5, false) };
+            workflow.Actions = new List<ActionBase> { GetInitialMenu() };
+        }
+
+        private static void SetupInitialMenuWithErrorMessage(Workflow workflow)
+        {
+            workflow.Actions = new List<ActionBase> {
+                GetPromptForText(OptionMenuNotSupportedMessage),
+                GetInitialMenu()
+            };
+        }
+
+        private static ActionBase GetInitialMenu()
+        {
+            return CreateIvrOptions(MainMenuPromptMessage, 1, false);
         }
 
         private static void ProcessMainMenuSelection(RecognizeOutcomeEvent outcome, CallState callStateForClient)
         {
             if (outcome.RecognizeOutcome.Outcome != Outcome.Success)
             {
-                SetupInitialMenu(outcome.ResultingWorkflow);
+                SetupInitialMenuWithErrorMessage(outcome.ResultingWorkflow);                
                 return;
             }
 
@@ -85,11 +99,6 @@
                     SetupInitialMenu(outcome.ResultingWorkflow);
                     break;
             }
-        }
-
-        private static void ProcessEmergency(RecognizeOutcomeEvent outcome)
-        {
-            SetupRecording(outcome.ResultingWorkflow);
         }
 
         private static Recognize CreateIvrOptions(string textToBeRead, int numberOfOptions, bool includeBack)
