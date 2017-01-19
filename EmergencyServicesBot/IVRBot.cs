@@ -14,7 +14,6 @@
     public class IVRBot : IDisposable, ICallingBot
     {
         // DTMF keys required for each of option, will be used for parsing results of recognize
-        private const string Emergency = "1";
         private const string Support = "2";
 
         // Response messages depending on user selection
@@ -80,12 +79,8 @@
 
             switch (outcome.RecognizeOutcome.ChoiceOutcome.ChoiceName)
             {
-                case Emergency:
-                    callStateForClient.InitiallyChosenMenuOption = Emergency;
-                    outcome.ResultingWorkflow = null;
-                    break;
                 case Support:
-                    callStateForClient.InitiallyChosenMenuOption = Support;
+                    callStateForClient.ChosenMenuOption = Support;
                     SetupRecording(outcome.ResultingWorkflow);
                     break;
                 default:
@@ -173,7 +168,6 @@
         private Task OnPlayPromptCompleted(PlayPromptOutcomeEvent playPromptOutcomeEvent)
         {
             var callStateForClient = this.callStateMap[playPromptOutcomeEvent.ConversationResult.Id];
-            callStateForClient.InitiallyChosenMenuOption = null;
             SetupInitialMenu(playPromptOutcomeEvent.ResultingWorkflow);
 
             return Task.FromResult(true);
@@ -238,25 +232,14 @@
         {
             var callStateForClient = this.callStateMap[recognizeOutcomeEvent.ConversationResult.Id];
 
-            switch (callStateForClient.InitiallyChosenMenuOption)
-            {
-                case null:
-                    ProcessMainMenuSelection(recognizeOutcomeEvent, callStateForClient);
-                    break;
-                case Emergency:
-                    ProcessEmergency(recognizeOutcomeEvent);
-                    break;
-                default:
-                    SetupInitialMenu(recognizeOutcomeEvent.ResultingWorkflow);
-                    break;
-            }
+            ProcessMainMenuSelection(recognizeOutcomeEvent, callStateForClient);
 
             return Task.FromResult(true);
         }
 
         private class CallState
         {
-            public string InitiallyChosenMenuOption { get; set; }
+            public string ChosenMenuOption { get; set; }
         }
     }
 }
