@@ -70,7 +70,8 @@
 
         private static void SetupInitialMenuWithErrorMessage(Workflow workflow)
         {
-            workflow.Actions = new List<ActionBase> {
+            workflow.Actions = new List<ActionBase>
+            {
                 GetPromptForText(OptionMenuNotSupportedMessage),
                 GetInitialMenu()
             };

@@ -24,59 +24,6 @@
 
         public string DefaultLocale { get; set; }
 
-        // public async Task GetText1(Stream audiostream)
-        // {
-        //    var preferences = new Preferences(this.DefaultLocale, new Uri(this.speechRecognitionUri), new CognitiveServicesAuthorizationProvider(this.subscriptionKey));
-        //    // Create a a speech client
-        //    using (var speechClient = new SpeechClient(preferences))
-        //    {
-        //        speechClient.SubscribeToPartialResult(this.OnPartialResultAsync);
-        //        speechClient.SubscribeToRecognitionResult(this.OnRecognitionResult);
-        //        // create an audio content and pass it a stream.
-        //        var deviceMetadata = new DeviceMetadata(DeviceType.Near, DeviceFamily.Desktop, NetworkType.Wifi, OsName.Windows, "1607", "Dell", "T3600");
-        //        var applicationMetadata = new ApplicationMetadata("SampleApp", "1.0.0");
-        //        var requestMetadata = new RequestMetadata(Guid.NewGuid(), deviceMetadata, applicationMetadata, "SampleAppService");
-        //        await speechClient.RecognizeAsync(new SpeechInput(audiostream, requestMetadata), CancellationToken.None).ConfigureAwait(false);
-        //    }
-        // }
-
-        /// <summary>
-        /// Invoked when the speech client receives a partial recognition hypothesis from the server.
-        /// </summary>
-        /// <param name="args">The partial response recognition result.</param>
-        /// <returns>
-        /// A task
-        /// </returns>
-        // public Task OnPartialResultAsync(RecognitionPartialResult args)
-        // {
-        //    Debug.WriteLine("--- Partial result received by OnPartialResult ---");
-        //    Debug.WriteLine(args.DisplayText);
-        //    return AgentListener.Resume(args.DisplayText);
-        //    // return CompletedTask;
-        // }
-
-        /// <summary>
-        /// Invoked when the speech client receives a phrase recognition result(s) from the server.
-        /// </summary>
-        /// <param name="args">The recognition result.</param>
-        /// <returns>
-        /// A task
-        /// </returns>
-        // public Task OnRecognitionResult(RecognitionResult args)
-        // {
-        //    var response = args;
-        //    Debug.WriteLine("--- Phrase result received by OnRecognitionResult ---");
-        //    Debug.WriteLine("***** Phrase Recognition Status = [{0}] ***", response.RecognitionStatus);
-        //    if (response.Phrases != null)
-        //    {
-        //        foreach (var result in response.Phrases)
-        //        {
-        //            Debug.WriteLine("{0} (Confidence:{1})", result.DisplayText, result.Confidence);
-        //        }
-        //    }
-        //    return Task.FromResult(true);
-        // }
-
         /// <summary>
         /// Gets text from an audio stream.
         /// </summary>
