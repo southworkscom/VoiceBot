@@ -166,7 +166,6 @@
     <Compile Include="IVRBot.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Services\Authentication.cs" />
-    <Compile Include="Services\AuthorisationProvider.cs" />
     <Compile Include="Services\MSCognitiveSpeechService.cs" />
   </ItemGroup>
   <ItemGroup>
